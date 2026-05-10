@@ -20,8 +20,8 @@ resource "aws_ecr_repository" "app_repo" {
 # ---------------- KEY PAIR ----------------
 
 resource "aws_key_pair" "key" {
-  key_name   = var.key_name
-  public_key = file(var.public_key_path)
+  key_name   = "guestbook-key"
+  public_key = file("~/.ssh/guestbook-new.pub")
 }
 
 # ---------------- IAM ROLE ----------------
@@ -119,38 +119,35 @@ resource "aws_instance" "app_server" {
 
 user_data = <<-EOF
 #!/bin/bash
-set -e
+set -euxo pipefail
 
-# Update system
+exec > /var/log/user-data.log 2>&1
+
 yum update -y
 
-# Install dependencies
 yum install -y docker awscli
-yum install -y amazon-cloudwatch-agent
 
-# Start Docker
 systemctl enable docker
 systemctl start docker
 
-# Add ec2-user to docker group
 usermod -aG docker ec2-user
 
-# Wait for Docker to fully start
-sleep 10
+# wait for Docker socket
+until docker info; do
+  echo "Waiting for Docker..."
+  sleep 5
+done
 
-# Login to ECR
+# login to ECR (retry-safe)
 aws ecr get-login-password --region us-east-1 \
 | docker login --username AWS --password-stdin ${aws_ecr_repository.app_repo.repository_url}
 
-# Pull latest image
 docker pull ${aws_ecr_repository.app_repo.repository_url}:latest
 
-# Stop old container if exists
-docker stop app || true
-docker rm app || true
+docker rm -f app || true
 
-# Run new container
-docker run -d --name app -p 8080:8080 ${aws_ecr_repository.app_repo.repository_url}:latest
+docker run -d --restart always --name app -p 8080:8080 \
+${aws_ecr_repository.app_repo.repository_url}:latest
 
 EOF
 }
