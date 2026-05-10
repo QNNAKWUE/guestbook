@@ -68,9 +68,17 @@ jobs:
         distribution: temurin
         java-version: '21'
 
+    # ---------------- MAVEN ----------------
+    - name: Set up Maven
+      uses: stCarolas/setup-maven@v4.5
+
     # ---------------- TEST ----------------
     - name: Run Tests
-      run: ./mvnw test
+      run: mvn test
+
+    # ---------------- BUILD ----------------
+    - name: Build JAR
+      run: mvn clean package -DskipTests
 
     # ---------------- AWS ----------------
     - name: Configure AWS credentials
