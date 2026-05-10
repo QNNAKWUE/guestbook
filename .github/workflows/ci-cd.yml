@@ -131,3 +131,6 @@ jobs:
 
           docker run -d --name app -p 8080:8080 \
           703464382026.dkr.ecr.us-east-1.amazonaws.com/guestbook-app:latest
+
+    - name: Debug key length
+      run: echo "${{ secrets.EC2_SSH_KEY }}" | wc -c
