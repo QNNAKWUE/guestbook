@@ -1,0 +1,33 @@
+target/
+.settings/
+.project
+.classpath
+.springBeans
+.idea
+*.iml
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Keep lock file
+!.terraform.lock.hcl
+
+# Keys
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+guestbook-key
+guestbook-key.pub
+terraform-key
+terraform-key.pub
+
+# Sensitive files
+*.pem
+*.key
+*.pub
