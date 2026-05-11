@@ -137,6 +137,7 @@ ec2
 
 ## Limitations
 
+- Using SSH Keys to deploy images to AWS EC2
 - No auto-scaling group implemented
 - Single EC2 instance (no high availability)
 - No database persistence layer (in-memory HSQLDB)
