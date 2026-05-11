@@ -77,9 +77,9 @@ The pipeline performs:
 git clone <repo-url>
 
 ### 2. Deploy infrastructure
-cd terraform
-terraform init
-terraform apply
+- cd terraform
+- terraform init
+- terraform apply
 
 ### 3. Push code to GitHub main branch
 
@@ -128,6 +128,28 @@ ec2
 - Terraform used to ensure reproducible infrastructure
 
 
+## Assumptions
+
+- AWS credentials are configured in GitHub Secrets
+- EC2 has internet access to pull from ECR
+- Port 8080 is open in security group
+
+
+## Limitations
+
+- No auto-scaling group implemented
+- Single EC2 instance (no high availability)
+- No database persistence layer (in-memory HSQLDB)
+
+
+## Future Improvements
+
+- Move to ECS or EKS for production-grade deployment
+- Add Application Load Balancer (ALB)
+- Add database (RDS)
+- Add rollback strategy in CI/CD
+- Improve monitoring dashboards in CloudWatch
+
 ## Key Notes
 
 - AWS credentials are configured in GitHub Secrets
@@ -137,7 +159,7 @@ ec2
 
 ## Repository Structure
 
-.
+
 ├── terraform/
 ├── .github/workflows/
 ├── src/
