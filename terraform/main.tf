@@ -124,7 +124,6 @@ set -euxo pipefail
 exec > /var/log/user-data.log 2>&1
 
 yum update -y
-
 yum install -y docker awscli
 
 systemctl enable docker
@@ -132,23 +131,21 @@ systemctl start docker
 
 usermod -aG docker ec2-user
 
-# wait for Docker socket
+# wait for docker
 until docker info; do
-  echo "Waiting for Docker..."
-  sleep 5
+  sleep 3
 done
 
-# login to ECR (retry-safe)
-aws ecr get-login-password --region us-east-1 \
-| docker login --username AWS --password-stdin ${aws_ecr_repository.app_repo.repository_url}
-
+# pull image ONLY (CI/CD pushes it)
 docker pull ${aws_ecr_repository.app_repo.repository_url}:latest
 
 docker rm -f app || true
 
-docker run -d --restart always --name app -p 8080:8080 \
-${aws_ecr_repository.app_repo.repository_url}:latest
-
+docker run -d \
+  --name app \
+  -p 8080:8080 \
+  --restart always \
+  ${aws_ecr_repository.app_repo.repository_url}:latest
 EOF
 }
 

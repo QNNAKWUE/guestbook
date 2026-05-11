@@ -5,6 +5,7 @@ target/
 .springBeans
 .idea
 *.iml
+.ec2-github-key
 
 # Terraform
 **/.terraform/*

@@ -1,17 +1,37 @@
-# name: Build and Deploy to ECR
+# name: Build Test and Deploy
 
 # on:
 #   push:
 #     branches: [ "main" ]
 
 # jobs:
-#   build:
+#   build-test-deploy:
 #     runs-on: ubuntu-latest
 
 #     steps:
 #     - name: Checkout code
 #       uses: actions/checkout@v3
 
+#     # ---------------- JAVA ----------------
+#     - name: Set up JDK
+#       uses: actions/setup-java@v3
+#       with:
+#         distribution: temurin
+#         java-version: '21'
+
+#     # ---------------- MAVEN ----------------
+#     - name: Set up Maven
+#       uses: stCarolas/setup-maven@v4.5
+
+#     # ---------------- TEST ----------------
+#     - name: Run Tests
+#       run: mvn test
+
+#     # ---------------- BUILD ----------------
+#     - name: Build JAR
+#       run: mvn clean package -DskipTests
+
+#     # ---------------- AWS ----------------
 #     - name: Configure AWS credentials
 #       uses: aws-actions/configure-aws-credentials@v2
 #       with:
@@ -19,33 +39,52 @@
 #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 #         aws-region: us-east-1
 
+#     # ---------------- ECR LOGIN ----------------
 #     - name: Login to Amazon ECR
 #       run: |
 #         aws ecr get-login-password --region us-east-1 \
 #         | docker login --username AWS --password-stdin 703464382026.dkr.ecr.us-east-1.amazonaws.com
 
+#     # ---------------- BUILD IMAGE ----------------
 #     - name: Build Docker image
 #       run: docker build -t guestbook-app .
 
+#     # ---------------- TAG IMAGE ----------------
 #     - name: Tag Docker image
 #       run: |
-#         docker tag guestbook-app:latest 703464382026.dkr.ecr.us-east-1.amazonaws.com/guestbook-app:latest
+#         docker tag guestbook-app:latest \
+#         703464382026.dkr.ecr.us-east-1.amazonaws.com/guestbook-app:latest
 
+#     # ---------------- PUSH IMAGE ----------------
 #     - name: Push Docker image
-#       run: docker push 703464382026.dkr.ecr.us-east-1.amazonaws.com/guestbook-app:latest
+#       run: |
+#         docker push \
+#         703464382026.dkr.ecr.us-east-1.amazonaws.com/guestbook-app:latest
 
-#     - name: Deploy to EC2 (SSH)
+#     # ---------------- DEPLOY ----------------
+#     - name: Deploy to EC2
 #       uses: appleboy/ssh-action@v1.0.3
 #       with:
-#         host: ${{ secrets.EC2_IP }}
+#         host: ${{ secrets.EC2_HOST }}
 #         username: ec2-user
 #         key: ${{ secrets.EC2_SSH_KEY }}
+#         port: 22
+#         timeout: 60s
 #         script: |
+#           aws ecr get-login-password --region us-east-1 | \
+#           docker login --username AWS --password-stdin \
+#           703464382026.dkr.ecr.us-east-1.amazonaws.com
+
 #           docker pull 703464382026.dkr.ecr.us-east-1.amazonaws.com/guestbook-app:latest
+
 #           docker stop app || true
 #           docker rm app || true
-#           docker run -d --name app -p 8080:8080 703464382026.dkr.ecr.us-east-1.amazonaws.com/guestbook-app:latest
 
+#           docker run -d --name app -p 8080:8080 \
+#           703464382026.dkr.ecr.us-east-1.amazonaws.com/guestbook-app:latest
+
+#     - name: Debug key length
+#       run: echo "${{ secrets.EC2_SSH_KEY }}" | wc -c
 
 name: Build Test and Deploy
 
@@ -114,15 +153,12 @@ jobs:
     - name: Deploy to EC2
       uses: appleboy/ssh-action@v1.0.3
       with:
-        host: ${{ secrets.EC2_HOST }}
+        host: ${{ secrets.EC2_HOST}}
         username: ec2-user
         key: ${{ secrets.EC2_SSH_KEY }}
-        port: 22
-        timeout: 60s
         script: |
           aws ecr get-login-password --region us-east-1 | \
-          docker login --username AWS --password-stdin \
-          703464382026.dkr.ecr.us-east-1.amazonaws.com
+          docker login --username AWS --password-stdin 703464382026.dkr.ecr.us-east-1.amazonaws.com
 
           docker pull 703464382026.dkr.ecr.us-east-1.amazonaws.com/guestbook-app:latest
 
@@ -132,5 +168,4 @@ jobs:
           docker run -d --name app -p 8080:8080 \
           703464382026.dkr.ecr.us-east-1.amazonaws.com/guestbook-app:latest
 
-    - name: Debug key length
-      run: echo "${{ secrets.EC2_SSH_KEY }}" | wc -c
+
