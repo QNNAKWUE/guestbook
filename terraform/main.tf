@@ -31,18 +31,22 @@ resource "aws_iam_role" "ec2_role" {
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-
     Statement = [
       {
         Action = "sts:AssumeRole"
         Effect = "Allow"
-
         Principal = {
           Service = "ec2.amazonaws.com"
         }
       }
     ]
   })
+}
+
+# CloudWatch Logs permission (FIX)
+resource "aws_iam_role_policy_attachment" "cw_agent_policy" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
 
 resource "aws_iam_role_policy_attachment" "ecr_policy" {
@@ -117,35 +121,22 @@ resource "aws_instance" "app_server" {
     Name = "guestbook-server"
   }
 
+
 user_data = <<-EOF
 #!/bin/bash
-set -euxo pipefail
-
-exec > /var/log/user-data.log 2>&1
-
 yum update -y
 yum install -y docker awscli
-
 systemctl enable docker
 systemctl start docker
 
 usermod -aG docker ec2-user
 
-# wait for docker
-until docker info; do
-  sleep 3
-done
+aws ecr get-login-password --region us-east-1 \
+| docker login --username AWS --password-stdin ${aws_ecr_repository.app_repo.repository_url}
 
-# pull image ONLY (CI/CD pushes it)
 docker pull ${aws_ecr_repository.app_repo.repository_url}:latest
-
-docker rm -f app || true
-
-docker run -d \
-  --name app \
-  -p 8080:8080 \
-  --restart always \
-  ${aws_ecr_repository.app_repo.repository_url}:latest
+systemctl start guestbook
 EOF
-}
+
+
 
