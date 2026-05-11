@@ -1,132 +1,146 @@
-# Guestbook DevOps Project
+# Guestbook DevOps Deployment (AWS + Terraform + Docker + CI/CD)
+## Overview
 
-## 📌 Overview
+This project demonstrates a complete DevOps pipeline for deploying a Spring Boot Guestbook application on AWS. It tdemonstrates end-to-end DevOps automation including infrastructure provisioning, CI/CD pipeline, containerization, and cloud deployment on AWS.
 
-This project demonstrates a production-style DevOps deployment pipeline using Terraform, Docker, AWS, and GitHub Actions.
+The system includes:
+- Infrastructure provisioning using Terraform
+- Docker containerization of the application
+- CI/CD pipeline using GitHub Actions
+- Deployment to AWS EC2
+- Image storage in Amazon ECR
+- Logging using AWS CloudWatch
 
-The application is containerized using Docker and deployed automatically to AWS EC2 through a CI/CD pipeline.
 
----
+## Architecture
 
-# 🏗️ Architecture
+User → Browser → EC2 Instance (Spring Boot App in Docker)  
+                     ↓  
+                   Amazon ECR (Docker Images)  
+                     ↓  
+             GitHub Actions (CI/CD Pipeline)  
+                     ↓  
+             Terraform (Infrastructure)  
+                     ↓  
+         CloudWatch Logs (Monitoring)
 
-GitHub → GitHub Actions → Amazon ECR → EC2 → Docker Container → CloudWatch
 
----
 
-# ⚙️ Technologies Used
+## Tech Stack
 
-- Terraform
 - AWS EC2
 - AWS ECR
+- AWS CloudWatch
+- Terraform
 - Docker
 - GitHub Actions
-- CloudWatch
-- Linux
+- Spring Boot (Java 21)
 
----
 
-# 🚀 Infrastructure Provisioning
+## Infrastructure as Code
 
-Terraform provisions:
+Terraform is used to provision:
+- EC2 instance
+- Security Group (ports 22, 8080)
+- IAM Role for EC2 (ECR + CloudWatch permissions)
+- ECR repository for Docker images
+- Key pair for SSH access
 
-- EC2 Instance
-- Security Group
-- IAM Role
-- IAM Instance Profile
-- ECR Repository
 
----
+terraform/
+  ├── main.tf
+  ├── variables.tf
+  ├── outputs.tf
+  ├── provider.tf
 
-# 🐳 Containerization
+
+## CI/CD Pipeline (GitHub Actions)
+
+The pipeline performs:
+
+1. Build application using Maven
+2. Run tests
+3. Build Docker image
+4. Push image to Amazon ECR
+5. SSH into EC2 instance
+6. Pull latest image and redeploy container
+
+
+## Workflow file
+
+.github/workflows/deploy.yml
+
+
+## Deployment Steps
+
+### 1. Clone repository
+git clone <repo-url>
+
+### 2. Deploy infrastructure
+cd terraform
+terraform init
+terraform apply
+
+### 3. Push code to GitHub main branch
+
+This triggers GitHub Actions pipeline automatically.
+
+### 4. Pipeline executes:
+- Builds JAR file
+- Builds Docker image
+- Pushes image to ECR
+- Deploys to EC2 via SSH
+
+### 5. Access application
+http://<EC2_PUBLIC_IP>:8080/guestbook
+
+
+## Containerization
 
 The application is containerized using Docker.
 
-Build image:
-
-```bash
+### Build command:
 docker build -t guestbook-app .
-```
 
-Run locally:
+### Run command:
+docker run -p 8080:8080 guestbook-app
 
-```bash
-docker run -d -p 8080:8080 guestbook-app
-```
 
----
+## Monitoring & Logging
 
-# 🔄 CI/CD Pipeline
+AWS CloudWatch Agent is installed on EC2 to collect logs.
 
-GitHub Actions pipeline automatically:
+### Logs collected:
+- /var/log/messages
 
-1. Builds Docker image
-2. Pushes image to Amazon ECR
-3. Connects to EC2
-4. Pulls latest image
-5. Deploys updated container
+### Log group:
+guestbook
 
-Pipeline file:
+### Log stream:
+ec2
 
-```text
-.github/workflows/deploy.yml
-```
 
----
+## Design Decisions
 
-# 📊 Monitoring & Logging
+- EC2 chosen for simplicity and cost efficiency
+- Docker used for consistent deployment environment
+- GitHub Actions used instead of Jenkins for faster setup
+- Terraform used to ensure reproducible infrastructure
 
-Amazon CloudWatch is used for:
 
-- EC2 log monitoring
-- System logs collection
+## Key Notes
 
----
+- AWS credentials are configured in GitHub Secrets
+- EC2 has internet access to pull from ECR
+- Port 8080 is open in security group
 
-# 🌐 Deployment
 
-Application deployed on:
+## Repository Structure
 
-```text
-http://54.144.153.85:8080
-```
-
----
-
-# 📂 Project Structure
-
-```text
 .
+├── terraform/
 ├── .github/workflows/
-├── main.tf
-├── variables.tf
-├── outputs.tf
-├── provider.tf
+├── src/
 ├── Dockerfile
-├── README.md
-```
-
----
-
-# 📌 Assumptions
-
-- AWS CLI configured
-- Docker installed
-- IAM permissions available
-- GitHub secrets configured
-
----
-
-# 🔧 Future Improvements
-
-- Use ECS/EKS instead of EC2
-- Add HTTPS with Load Balancer
-- Add Terraform modules
-- Add Kubernetes deployment
-- Add Prometheus/Grafana monitoring
-
----
-
-# 👩‍💻 Author
-
-Queen Nnakwue
+├── pom.xml
+└── README.md
